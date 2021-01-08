@@ -190,9 +190,7 @@ oliverjam, yvonne-liu</textarea
       });
 
       function fetchUser(username) {
-        return fetch(
-          `https://cors-anywhere.herokuapp.com/https://www.codewars.com/api/v1/users/${username}/code-challenges/completed`
-        )
+        return fetch(`/api/users/${username}/code-challenges/completed`)
           .then((response) => {
             if (!response.ok) {
               const error = new Error("HTTP Error");
