@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        max-width: 74ch;
+        margin: 0 auto;
+        padding: 1.5rem;
+        font-family: system-ui;
+        color: hsl(200, 10%, 15%);
+      }
+
+      h1 {
+        margin: 3rem 0;
+      }
+
+      form > * + * {
+        margin-top: 2rem;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+
+      .row > * {
+        flex: 1 0 30ch;
+      }
+
+      label,
+      textarea,
+      button {
+        display: block;
+        width: 100%;
+      }
+
+      label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      textarea {
+        padding: 0.5rem;
+        font: inherit;
+        font-family: Consolas, monospace;
+        color: inherit;
+      }
+
+      button {
+        font: inherit;
+        font-weight: bold;
+        padding: 0.5rem;
+      }
+
+      output {
+        display: block;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      thead {
+        border-bottom: 1px solid;
+      }
+
+      th,
+      td {
+        padding: 0.75rem 0.5rem;
+      }
+
+      tr:nth-child(even) {
+        background-color: ghostwhite;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      <svg width="100" fill="none" viewBox="-1 0 301 101">
+        <title>FAC</title>
+        <defs>
+          <pattern id="a" width="5" height="5" patternUnits="userSpaceOnUse">
+            <path stroke="#000" d="M-1 1l2-2M0 5l5-5M4 6l2-2" />
+          </pattern>
+        </defs>
+        <path stroke="#000" d="M0 0h100v100H0z" />
+        <path fill="#000" d="M0 0h100v50H0z" />
+        <path fill="url(#a)" d="M50 50h50v50H50z" />
+        <g>
+          <path stroke="#000" d="M108 100L158 0l50 100z" />
+          <path fill="#000" d="M108 100l25-50 25 50zM158 100l25-50 25 50z" />
+          <path
+            fill="url(#a)"
+            d="M125 50l25 50 25-50z"
+            transform="translate(8)"
+          />
+        </g>
+        <g>
+          <circle cx="250" cy="50" r="50" stroke="#000" />
+          <circle cx="250" cy="50" r="22" fill="url(#a)" />
+          <path fill="#000" d="M250 0a1 1 0 010 100" />
+        </g>
+      </svg>
+      Codewars checker
+    </h1>
+    <form>
+      <div class="row">
+        <div>
+          <label for="required">Required kata IDs (comma separated)</label>
+          <textarea name="required" id="required" cols="25" rows="20">
+544675c6f971f7399a000e79,
+56bc28ad5bdaeb48760009b0,
+5715eaedb436cf5606000381,
+57a0e5c372292dd76d000d7e,
+5672a98bdbdd995fad00000f,
+54ff3102c1bad923760001f3,
+57cebe1dc6fdc20c57000ac9,
+55f8a9c06c018a0d6e000132,
+53dbd5315a3c69eed20002dd,
+529eef7a9194e0cbc1000255,
+514b92a657cdc65150000006,
+58d76854024c72c3e20000de,
+523f5d21c841566fde000009,
+546f922b54af40e1e90001da,
+54da539698b8a2ad76000228,
+520b9d2ad5c005041100000f,
+52597aa56021e91c93000cb0,
+52685f7382004e774f0001f7,
+513e08acc600c94f01000001,
+530e15517bc88ac656000716</textarea
+          >
+        </div>
+        <div>
+          <label for="usernames">Usernames (comma separated)</label>
+          <textarea name="usernames" id="usernames" cols="25" rows="10">
+oliverjam, yvonne-liu</textarea
+          >
+        </div>
+      </div>
+      <button>Check</button>
+      <output id="status" aria-live="polite"></output>
+      <output id="results"></output>
+    </form>
+
+    <template id="results-template">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Complete</th>
+            <th>Missing</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </template>
+
+    <script>
+      const form = document.querySelector("form");
+      const status = document.querySelector("#status");
+      const results = document.querySelector("#results");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const requiredRaw = event.target.elements.required.value;
+        const usernamesRaw = event.target.elements.usernames.value;
+        const required = requiredRaw.split(/,\s*/);
+        const usernames = usernamesRaw.split(/,\s*/);
+        status.textContent = "Loading...";
+        results.innerHTML = "";
+        results.append(resultsTable());
+        Promise.all(
+          usernames.map((user) =>
+            fetchUser(user)
+              .then(checkResult(required))
+              .then(updateResult)
+              .catch(updateError)
+          )
+        ).then(() => (status.textContent = "Complete"));
+      });
+
+      function fetchUser(username) {
+        return fetch(
+          `https://cors-anywhere.herokuapp.com/https://www.codewars.com/api/v1/users/${username}/code-challenges/completed`
+        )
+          .then((response) => {
+            if (!response.ok) {
+              const error = new Error("HTTP Error");
+              error.status = response.status;
+              throw error;
+            }
+            return response.json();
+          })
+          .then(({ data }) => ({ username, data }))
+          .catch((error) => {
+            error.username = username;
+            throw error;
+          });
+      }
+
+      function checkResult(required) {
+        return (user) => {
+          user.kata = required.map((id) => {
+            const completed = !!user.data.find((k) => k.id === id);
+            return { id, completed };
+          });
+          user.complete = user.kata.every((k) => k.completed);
+          return user;
+        };
+      }
+
+      function updateResult(user) {
+        const resultsBody = results.querySelector("tbody");
+        resultsBody.append(
+          row(user.username, user.complete ? " 👍" : " 👎", missing(user.kata))
+        );
+      }
+
+      function updateError(error) {
+        console.error(error);
+        status.textContent = "Error";
+        const resultsBody = results.querySelector("tbody");
+        resultsBody.append(row(error.username, error.message));
+      }
+
+      function row(username, complete, missing = []) {
+        return h(
+          "tr",
+          {},
+          h("td", {}, username),
+          h("td", {}, complete),
+          h("td", {}, ...missing)
+        );
+      }
+
+      function missing(kata) {
+        return kata
+          .filter((k) => !k.completed)
+          .map(({ id }, i) => [
+            h("a", { href: `https://www.codewars.com/kata/${id}` }, i + 1),
+            " ",
+          ])
+          .flat();
+      }
+
+      const template = document.querySelector("#results-template");
+      function resultsTable() {
+        return template.content.cloneNode(true);
+      }
+
+      const map = (fn) => (array) => array.map(fn);
+
+      function h(tag, props = {}, ...kids) {
+        const el = document.createElement(tag);
+        Object.assign(el, props);
+        el.append(...kids);
+        return el;
+      }
+    </script>
+  </body>
+</html>
