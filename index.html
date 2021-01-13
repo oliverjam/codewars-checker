@@ -117,7 +117,7 @@
       <div class="row">
         <div>
           <label for="required">Required kata IDs (comma separated)</label>
-          <textarea name="required" id="required" rows="20">
+          <textarea name="required" id="required" rows="20" required>
 544675c6f971f7399a000e79,
 56bc28ad5bdaeb48760009b0,
 5715eaedb436cf5606000381,
@@ -142,7 +142,12 @@
         </div>
         <div>
           <label for="usernames">Usernames (comma separated)</label>
-          <textarea name="usernames" id="usernames" rows="10"></textarea>
+          <textarea
+            name="usernames"
+            id="usernames"
+            rows="10"
+            required
+          ></textarea>
         </div>
       </div>
       <button>Check</button>
@@ -168,12 +173,7 @@
       const status = document.querySelector("#status");
       const results = document.querySelector("#results");
 
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const requiredRaw = event.target.elements.required.value;
-        const usernamesRaw = event.target.elements.usernames.value;
-        const required = requiredRaw.split(/,\s*/);
-        const usernames = usernamesRaw.split(/,\s*/);
+      function handleSubmit(required, usernames) {
         status.textContent = "Loading...";
         results.innerHTML = "";
         results.append(resultsTable());
@@ -185,6 +185,16 @@
               .catch(updateError)
           )
         ).then(() => (status.textContent = "Complete"));
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const requiredRaw = event.target.elements.required.value;
+        const usernamesRaw = event.target.elements.usernames.value;
+        const required = requiredRaw.split(/,\s*/);
+        const usernames = usernamesRaw.split(/,\s*/);
+        history.replaceState(null, null, "?names=" + usernames.join(","));
+        handleSubmit(required, usernames);
       });
 
       function fetchUser(username) {
@@ -254,7 +264,15 @@
         return template.content.cloneNode(true);
       }
 
-      const map = (fn) => (array) => array.map(fn);
+      const { searchParams } = new URL(window.location);
+      const names = searchParams.get("names");
+      if (names) {
+        form.elements.usernames.value = names;
+        const requiredRaw = form.elements.required.value;
+        const required = requiredRaw.split(/,\s*/);
+        const usernames = names.split(/,\s*/);
+        handleSubmit(required, usernames);
+      }
 
       function h(tag, props = {}, ...kids) {
         const el = document.createElement(tag);
