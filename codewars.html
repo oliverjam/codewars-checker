@@ -160,6 +160,9 @@
         <thead>
           <tr>
             <th>Username</th>
+            <th>Overall</th>
+            <th>JS</th>
+            <th>Honor</th>
             <th>Complete</th>
             <th>Missing</th>
           </tr>
@@ -198,22 +201,36 @@
       });
 
       function fetchUser(username) {
-        return fetch(
-          `/api/codewars/users/${username}/code-challenges/completed`
-        )
-          .then((response) => {
-            if (!response.ok) {
-              const error = new Error("HTTP Error");
-              error.status = response.status;
-              throw error;
-            }
-            return response.json();
+        return Promise.all([
+          get(`/api/codewars/users/${username}`),
+          get(`/api/codewars/users/${username}/code-challenges/completed`),
+        ])
+          .then(([{ honor, ranks }, { data }]) => {
+            let overall = {
+              name: ranks.overall.name,
+              score: ranks.overall.score,
+            };
+            let js = {
+              name: ranks.languages.javascript.name,
+              score: ranks.languages.javascript.score,
+            };
+            return { username, data, honor, ranks: { overall, js } };
           })
-          .then(({ data }) => ({ username, data }))
           .catch((error) => {
             error.username = username;
             throw error;
           });
+      }
+
+      function get(url) {
+        return fetch(url).then((response) => {
+          if (!response.ok) {
+            const error = new Error("HTTP Error");
+            error.status = response.status;
+            throw error;
+          }
+          return response.json();
+        });
       }
 
       function checkResult(required) {
@@ -229,8 +246,16 @@
 
       function updateResult(user) {
         const resultsBody = results.querySelector("tbody");
+        console.log(user);
         resultsBody.append(
-          row(user.username, user.complete ? " 👍" : " 👎", missing(user.kata))
+          row(
+            user.username,
+            `${user.ranks.overall.name} (${user.ranks.overall.score})`,
+            `${user.ranks.js.name} (${user.ranks.js.score})`,
+            user.honor,
+            user.complete ? " 👍" : " 👎",
+            missing(user.kata)
+          )
         );
       }
 
@@ -241,11 +266,14 @@
         resultsBody.append(row(error.username, error.message));
       }
 
-      function row(username, complete, missing = []) {
+      function row(username, overall, js, honor, complete, missing = []) {
         return h(
           "tr",
           {},
           h("td", {}, username),
+          h("td", {}, overall),
+          h("td", {}, js),
+          h("td", {}, honor),
           h("td", {}, complete),
           h("td", {}, ...missing)
         );
