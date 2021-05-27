@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fCC Checker</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        max-width: 74ch;
+        margin: 0 auto;
+        padding: 1.5rem;
+        font-family: system-ui;
+        color: hsl(200, 10%, 15%);
+      }
+
+      h1 {
+        margin: 3rem 0;
+      }
+
+      form > * + * {
+        margin-top: 2rem;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+
+      .row > * {
+        flex: 1 0 30ch;
+      }
+
+      label,
+      textarea,
+      button {
+        display: block;
+        width: 100%;
+      }
+
+      label {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      textarea {
+        padding: 0.5rem;
+        font: inherit;
+        font-family: Consolas, monospace;
+        color: inherit;
+      }
+
+      button {
+        font: inherit;
+        font-weight: bold;
+        padding: 0.5rem;
+      }
+
+      output {
+        display: block;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      thead {
+        border-bottom: 1px solid;
+      }
+
+      th,
+      td {
+        padding: 0.75rem 0.5rem;
+      }
+
+      tr:nth-child(even) {
+        background-color: ghostwhite;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>
+      <svg width="100" fill="none" viewBox="-1 0 301 101">
+        <title>FAC</title>
+        <defs>
+          <pattern id="a" width="5" height="5" patternUnits="userSpaceOnUse">
+            <path stroke="#000" d="M-1 1l2-2M0 5l5-5M4 6l2-2" />
+          </pattern>
+        </defs>
+        <path stroke="#000" d="M0 0h100v100H0z" />
+        <path fill="#000" d="M0 0h100v50H0z" />
+        <path fill="url(#a)" d="M50 50h50v50H50z" />
+        <g>
+          <path stroke="#000" d="M108 100L158 0l50 100z" />
+          <path fill="#000" d="M108 100l25-50 25 50zM158 100l25-50 25 50z" />
+          <path
+            fill="url(#a)"
+            d="M125 50l25 50 25-50z"
+            transform="translate(8)"
+          />
+        </g>
+        <g>
+          <circle cx="250" cy="50" r="50" stroke="#000" />
+          <circle cx="250" cy="50" r="22" fill="url(#a)" />
+          <path fill="#000" d="M250 0a1 1 0 010 100" />
+        </g>
+      </svg>
+      fCC checker
+    </h1>
+    <form>
+      <div class="row">
+        <div>
+          <label for="usernames">Usernames (comma separated)</label>
+          <textarea
+            name="usernames"
+            id="usernames"
+            rows="10"
+            required
+          ></textarea>
+        </div>
+      </div>
+      <button>Check</button>
+      <output id="status" aria-live="polite"></output>
+      <output id="results"></output>
+    </form>
+
+    <template id="results-template">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Complete</th>
+            <th>Missing</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </template>
+
+    <script>
+      const form = document.querySelector("form");
+      const status = document.querySelector("#status");
+      const results = document.querySelector("#results");
+
+      let required = [
+        {
+          id: "bd7123c8c441eddfaeb5bdef",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/say-hello-to-html-elements",
+        },
+        {
+          id: "bad87fee1348bd9aedf0887a",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/headline-with-the-h2-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08801",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/inform-with-the-paragraph-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08833",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/fill-in-the-blank-with-placeholder-text",
+        },
+        {
+          id: "bad87fee1348bd9aedf08802",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/uncomment-html",
+        },
+        {
+          id: "bad87fee1348bd9aedf08804",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/comment-out-html",
+        },
+        {
+          id: "bad87fed1348bd9aedf08833",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/delete-html-elements",
+        },
+        {
+          id: "bad87fee1348bd9aecf08801",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/introduction-to-html5-elements",
+        },
+        {
+          id: "bad87fee1348bd9aedf08812",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/add-images-to-your-website",
+        },
+        {
+          id: "bad87fee1348bd9aedf08816",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/link-to-external-pages-with-anchor-elements",
+        },
+        {
+          id: "bad88fee1348bd9aedf08816",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/link-to-internal-sections-of-a-page-with-anchor-elements",
+        },
+        {
+          id: "bad87fee1348bd9aede08817",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/nest-an-anchor-element-within-a-paragraph",
+        },
+        {
+          id: "bad87fee1348bd9aedf08817",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/make-dead-links-using-the-hash-symbol",
+        },
+        {
+          id: "bad87fee1348bd9aedf08820",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/turn-an-image-into-a-link",
+        },
+        {
+          id: "bad87fee1348bd9aedf08827",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-a-bulleted-unordered-list",
+        },
+        {
+          id: "bad87fee1348bd9aedf08828",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-an-ordered-list",
+        },
+        {
+          id: "bad87fee1348bd9aedf08829",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-a-text-field",
+        },
+        {
+          id: "bad87fee1348bd9aedf08830",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/add-placeholder-text-to-a-text-field",
+        },
+        {
+          id: "bad87fee1348bd9aede08830",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-a-form-element",
+        },
+        {
+          id: "bad87fee1348bd9aedd08830",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/add-a-submit-button-to-a-form",
+        },
+        {
+          id: "bad87fee1348bd9aedc08830",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/use-html5-to-require-a-field",
+        },
+        {
+          id: "bad87fee1348bd9aedf08834",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-a-set-of-radio-buttons",
+        },
+        {
+          id: "bad87fee1348bd9aedf08835",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/create-a-set-of-checkboxes",
+        },
+        {
+          id: "5c6c06847491271903d37cfd",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/use-the-value-attribute-with-radio-buttons-and-checkboxes",
+        },
+        {
+          id: "bad87fee1348bd9aedd08835",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/check-radio-buttons-and-checkboxes-by-default",
+        },
+        {
+          id: "bad87fee1348bd9aede08835",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/nest-many-elements-within-a-single-div-element",
+        },
+        {
+          id: "587d78aa367417b2b2512aed",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/declare-the-doctype-of-an-html-document",
+        },
+        {
+          id: "587d78aa367417b2b2512aec",
+          slug: "/learn/responsive-web-design/basic-html-and-html5/define-the-head-and-body-of-an-html-document",
+        },
+        {
+          id: "bad87fee1348bd9aedf08803",
+          slug: "/learn/responsive-web-design/basic-css/change-the-color-of-text",
+        },
+        {
+          id: "bad87fee1348bd9aedf08805",
+          slug: "/learn/responsive-web-design/basic-css/use-css-selectors-to-style-elements",
+        },
+        {
+          id: "bad87fee1348bd9aecf08806",
+          slug: "/learn/responsive-web-design/basic-css/use-a-css-class-to-style-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aefe08806",
+          slug: "/learn/responsive-web-design/basic-css/style-multiple-elements-with-a-css-class",
+        },
+        {
+          id: "bad87fee1348bd9aedf08806",
+          slug: "/learn/responsive-web-design/basic-css/change-the-font-size-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aede08807",
+          slug: "/learn/responsive-web-design/basic-css/set-the-font-family-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08807",
+          slug: "/learn/responsive-web-design/basic-css/import-a-google-font",
+        },
+        {
+          id: "bad87fee1348bd9aedf08808",
+          slug: "/learn/responsive-web-design/basic-css/specify-how-fonts-should-degrade",
+        },
+        {
+          id: "bad87fee1348bd9acdf08812",
+          slug: "/learn/responsive-web-design/basic-css/size-your-images",
+        },
+        {
+          id: "bad87fee1348bd9bedf08813",
+          slug: "/learn/responsive-web-design/basic-css/add-borders-around-your-elements",
+        },
+        {
+          id: "bad87fee1348bd9aedf08814",
+          slug: "/learn/responsive-web-design/basic-css/add-rounded-corners-with-border-radius",
+        },
+        {
+          id: "bad87fee1348bd9aedf08815",
+          slug: "/learn/responsive-web-design/basic-css/make-circular-images-with-a-border-radius",
+        },
+        {
+          id: "bad87fed1348bd9aede07836",
+          slug: "/learn/responsive-web-design/basic-css/give-a-background-color-to-a-div-element",
+        },
+        {
+          id: "bad87eee1348bd9aede07836",
+          slug: "/learn/responsive-web-design/basic-css/set-the-id-of-an-element",
+        },
+        {
+          id: "bad87dee1348bd9aede07836",
+          slug: "/learn/responsive-web-design/basic-css/use-an-id-attribute-to-style-an-element",
+        },
+        {
+          id: "bad88fee1348bd9aedf08825",
+          slug: "/learn/responsive-web-design/basic-css/adjust-the-padding-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08822",
+          slug: "/learn/responsive-web-design/basic-css/adjust-the-margin-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08823",
+          slug: "/learn/responsive-web-design/basic-css/add-a-negative-margin-to-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08824",
+          slug: "/learn/responsive-web-design/basic-css/add-different-padding-to-each-side-of-an-element",
+        },
+        {
+          id: "bad87fee1248bd9aedf08824",
+          slug: "/learn/responsive-web-design/basic-css/add-different-margins-to-each-side-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08826",
+          slug: "/learn/responsive-web-design/basic-css/use-clockwise-notation-to-specify-the-padding-of-an-element",
+        },
+        {
+          id: "bad87fee1348bd9afdf08726",
+          slug: "/learn/responsive-web-design/basic-css/use-clockwise-notation-to-specify-the-margin-of-an-element",
+        },
+        {
+          id: "58c383d33e2e3259241f3076",
+          slug: "/learn/responsive-web-design/basic-css/use-attribute-selectors-to-style-elements",
+        },
+        {
+          id: "bad82fee1322bd9aedf08721",
+          slug: "/learn/responsive-web-design/basic-css/understand-absolute-versus-relative-units",
+        },
+        {
+          id: "bad87fee1348bd9aedf08736",
+          slug: "/learn/responsive-web-design/basic-css/style-the-html-body-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08746",
+          slug: "/learn/responsive-web-design/basic-css/inherit-styles-from-the-body-element",
+        },
+        {
+          id: "bad87fee1348bd9aedf08756",
+          slug: "/learn/responsive-web-design/basic-css/prioritize-one-style-over-another",
+        },
+        {
+          id: "bad87fee1348bd9aedf04756",
+          slug: "/learn/responsive-web-design/basic-css/override-styles-in-subsequent-css",
+        },
+        {
+          id: "bad87fee1348bd8aedf06756",
+          slug: "/learn/responsive-web-design/basic-css/override-class-declarations-by-styling-id-attributes",
+        },
+        {
+          id: "bad87fee1348bd9aedf06756",
+          slug: "/learn/responsive-web-design/basic-css/override-class-declarations-with-inline-styles",
+        },
+        {
+          id: "bad87fee1348bd9aedf07756",
+          slug: "/learn/responsive-web-design/basic-css/override-all-other-styles-by-using-important",
+        },
+        {
+          id: "bad87fee1348bd9aedf08726",
+          slug: "/learn/responsive-web-design/basic-css/use-hex-code-for-specific-colors",
+        },
+        {
+          id: "bad87fee1348bd9aedf08721",
+          slug: "/learn/responsive-web-design/basic-css/use-hex-code-to-mix-colors",
+        },
+        {
+          id: "bad87fee1348bd9aedf08719",
+          slug: "/learn/responsive-web-design/basic-css/use-abbreviated-hex-code",
+        },
+        {
+          id: "bad87fee1348bd9aede08718",
+          slug: "/learn/responsive-web-design/basic-css/use-rgb-values-to-color-elements",
+        },
+        {
+          id: "bad82fee1348bd9aedf08721",
+          slug: "/learn/responsive-web-design/basic-css/use-rgb-to-mix-colors",
+        },
+        {
+          id: "5a9d725e424fe3d0e10cad10",
+          slug: "/learn/responsive-web-design/basic-css/use-css-variables-to-change-several-elements-at-once",
+        },
+        {
+          id: "5a9d726c424fe3d0e10cad11",
+          slug: "/learn/responsive-web-design/basic-css/create-a-custom-css-variable",
+        },
+        {
+          id: "5a9d727a424fe3d0e10cad12",
+          slug: "/learn/responsive-web-design/basic-css/use-a-custom-css-variable",
+        },
+        {
+          id: "5a9d7286424fe3d0e10cad13",
+          slug: "/learn/responsive-web-design/basic-css/attach-a-fallback-value-to-a-css-variable",
+        },
+        {
+          id: "5b7d72c338cd7e35b63f3e14",
+          slug: "/learn/responsive-web-design/basic-css/improve-compatibility-with-browser-fallbacks",
+        },
+        {
+          id: "5a9d7295424fe3d0e10cad14",
+          slug: "/learn/responsive-web-design/basic-css/inherit-css-variables",
+        },
+        {
+          id: "5a9d72a1424fe3d0e10cad15",
+          slug: "/learn/responsive-web-design/basic-css/change-a-variable-for-a-specific-area",
+        },
+        {
+          id: "5a9d72ad424fe3d0e10cad16",
+          slug: "/learn/responsive-web-design/basic-css/use-a-media-query-to-change-a-variable",
+        },
+        {
+          id: "587d78b0367417b2b2512b08",
+          slug: "/learn/responsive-web-design/responsive-web-design-principles/create-a-media-query",
+        },
+        {
+          id: "587d78b1367417b2b2512b09",
+          slug: "/learn/responsive-web-design/responsive-web-design-principles/make-an-image-responsive",
+        },
+        {
+          id: "587d78b1367417b2b2512b0a",
+          slug: "/learn/responsive-web-design/responsive-web-design-principles/use-a-retina-image-for-higher-resolution-displays",
+        },
+        {
+          id: "587d78b1367417b2b2512b0c",
+          slug: "/learn/responsive-web-design/responsive-web-design-principles/make-typography-responsive",
+        },
+        {
+          id: "587d78ab367417b2b2512af0",
+          slug: "/learn/responsive-web-design/css-flexbox/use-display-flex-to-position-two-boxes",
+        },
+        {
+          id: "587d78ab367417b2b2512af1",
+          slug: "/learn/responsive-web-design/css-flexbox/add-flex-superpowers-to-the-tweet-embed",
+        },
+        {
+          id: "587d78ab367417b2b2512af2",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-direction-property-to-make-a-row",
+        },
+        {
+          id: "587d78ab367417b2b2512af3",
+          slug: "/learn/responsive-web-design/css-flexbox/apply-the-flex-direction-property-to-create-rows-in-the-tweet-embed",
+        },
+        {
+          id: "587d78ac367417b2b2512af4",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-direction-property-to-make-a-column",
+        },
+        {
+          id: "587d78ac367417b2b2512af5",
+          slug: "/learn/responsive-web-design/css-flexbox/apply-the-flex-direction-property-to-create-a-column-in-the-tweet-embed",
+        },
+        {
+          id: "587d78ac367417b2b2512af6",
+          slug: "/learn/responsive-web-design/css-flexbox/align-elements-using-the-justify-content-property",
+        },
+        {
+          id: "587d78ac367417b2b2512af7",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-justify-content-property-in-the-tweet-embed",
+        },
+        {
+          id: "587d78ad367417b2b2512af8",
+          slug: "/learn/responsive-web-design/css-flexbox/align-elements-using-the-align-items-property",
+        },
+        {
+          id: "587d78ad367417b2b2512af9",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-align-items-property-in-the-tweet-embed",
+        },
+        {
+          id: "587d78ad367417b2b2512afa",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-wrap-property-to-wrap-a-row-or-column",
+        },
+        {
+          id: "587d78ad367417b2b2512afb",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-shrink-property-to-shrink-items",
+        },
+        {
+          id: "587d78ae367417b2b2512afc",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-grow-property-to-expand-items",
+        },
+        {
+          id: "587d78ae367417b2b2512afd",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-basis-property-to-set-the-initial-size-of-an-item",
+        },
+        {
+          id: "587d78ae367417b2b2512afe",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-flex-shorthand-property",
+        },
+        {
+          id: "587d78ae367417b2b2512aff",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-order-property-to-rearrange-items",
+        },
+        {
+          id: "587d78af367417b2b2512b00",
+          slug: "/learn/responsive-web-design/css-flexbox/use-the-align-self-property",
+        },
+        {
+          id: "bd7123c9c441eddfaeb4bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comment-your-javascript-code",
+        },
+        {
+          id: "bd7123c9c443eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/declare-javascript-variables",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244a8",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/storing-values-with-the-assignment-operator",
+        },
+        {
+          id: "5ee127a03c3b35dd45426493",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/assigning-the-value-of-one-variable-to-another",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244a9",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/initializing-variables-with-the-assignment-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244aa",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/understanding-uninitialized-variables",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ab",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/understanding-case-sensitivity-in-variables",
+        },
+        {
+          id: "cf1111c1c11feddfaeb3bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/add-two-numbers-with-javascript",
+        },
+        {
+          id: "cf1111c1c11feddfaeb4bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/subtract-one-number-from-another-with-javascript",
+        },
+        {
+          id: "cf1231c1c11feddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/multiply-two-numbers-with-javascript",
+        },
+        {
+          id: "cf1111c1c11feddfaeb6bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/divide-one-number-by-another-with-javascript",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ac",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/increment-a-number-with-javascript",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ad",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/decrement-a-number-with-javascript",
+        },
+        {
+          id: "cf1391c1c11feddfaeb4bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/create-decimal-numbers-with-javascript",
+        },
+        {
+          id: "bd7993c9c69feddfaeb7bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/multiply-two-decimals-with-javascript",
+        },
+        {
+          id: "bd7993c9ca9feddfaeb7bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/divide-one-decimal-by-another-with-javascript",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ae",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/finding-a-remainder-in-javascript",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244af",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/compound-assignment-with-augmented-addition",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b0",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/compound-assignment-with-augmented-subtraction",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/compound-assignment-with-augmented-multiplication",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b2",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/compound-assignment-with-augmented-division",
+        },
+        {
+          id: "bd7123c9c444eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/declare-string-variables",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b5",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/escaping-literal-quotes-in-strings",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b4",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/quoting-strings-with-single-quotes",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b6",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/escape-sequences-in-strings",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b7",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/concatenating-strings-with-plus-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b8",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/concatenating-strings-with-the-plus-equals-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b9",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/constructing-strings-with-variables",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ed",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/appending-variables-to-strings",
+        },
+        {
+          id: "bd7123c9c448eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/find-the-length-of-a-string",
+        },
+        {
+          id: "bd7123c9c549eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-bracket-notation-to-find-the-first-character-in-a-string",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ba",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/understand-string-immutability",
+        },
+        {
+          id: "bd7123c9c450eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-bracket-notation-to-find-the-nth-character-in-a-string",
+        },
+        {
+          id: "bd7123c9c451eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-bracket-notation-to-find-the-last-character-in-a-string",
+        },
+        {
+          id: "bd7123c9c452eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-bracket-notation-to-find-the-nth-to-last-character-in-a-string",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244bb",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/word-blanks",
+        },
+        {
+          id: "bd7993c9c69feddfaeb8bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/store-multiple-values-in-one-variable-using-javascript-arrays",
+        },
+        {
+          id: "cf1111c1c11feddfaeb7bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/nest-one-array-within-another-array",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392ca",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/access-array-data-with-indexes",
+        },
+        {
+          id: "cf1111c1c11feddfaeb8bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/modify-array-data-with-indexes",
+        },
+        {
+          id: "56592a60ddddeae28f7aa8e1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/access-multi-dimensional-arrays-with-indexes",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392cb",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/manipulate-arrays-with-push",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392cc",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/manipulate-arrays-with-pop",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392cd",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/manipulate-arrays-with-shift",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392ce",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/manipulate-arrays-with-unshift",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244bc",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/shopping-list",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392cf",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/write-reusable-javascript-with-functions",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244bd",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/passing-values-to-functions-with-arguments",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244be",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/global-scope-and-functions",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244bf",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/local-scope-and-functions",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c0",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/global-vs--local-scope-in-functions",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c2",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/return-a-value-from-a-function-with-return",
+        },
+        {
+          id: "598e8944f009e646fc236146",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/understanding-undefined-value-returned-from-a-function",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c3",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/assignment-with-a-returned-value",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c6",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/stand-in-line",
+        },
+        {
+          id: "bd7123c9c441eddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/understanding-boolean-values",
+        },
+        {
+          id: "cf1111c1c12feddfaeb3bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-conditional-logic-with-if-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d0",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-equality-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-strict-equality-operator",
+        },
+        {
+          id: "599a789b454f2bbd91a3ff4d",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/practice-comparing-different-values",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d2",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-inequality-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d3",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-strict-inequality-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d4",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-greater-than-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d5",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-greater-than-or-equal-to-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d6",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-less-than-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d7",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparison-with-the-less-than-or-equal-to-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d8",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparisons-with-the-logical-and-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244d9",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/comparisons-with-the-logical-or-operator",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244da",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/introducing-else-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244db",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/introducing-else-if-statements",
+        },
+        {
+          id: "5690307fddb111c6084545d7",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/logical-order-in-if-else-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244dc",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/chaining-if-else-statements",
+        },
+        {
+          id: "5664820f61c48e80c9fa476c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/golf-code",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244dd",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/selecting-from-many-options-with-switch-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244de",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/adding-a-default-option-in-switch-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244df",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/multiple-identical-options-in-switch-statements",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244e0",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/replacing-if-else-chains-with-switch",
+        },
+        {
+          id: "5679ceb97cbaa8c51670a16b",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/returning-boolean-values-from-functions",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c4",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/return-early-pattern-for-functions",
+        },
+        {
+          id: "565bbe00e9cc8ac0725390f4",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/counting-cards",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392d0",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/build-javascript-objects",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c7",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/accessing-object-properties-with-dot-notation",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c8",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/accessing-object-properties-with-bracket-notation",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244c9",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/accessing-object-properties-with-variables",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392d1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/updating-object-properties",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392d2",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/add-new-properties-to-a-javascript-object",
+        },
+        {
+          id: "56bbb991ad1ed5201cd392d3",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/delete-properties-from-a-javascript-object",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244ca",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/using-objects-for-lookups",
+        },
+        {
+          id: "567af2437cbaa8c51670a16c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/testing-objects-for-properties",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244cb",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/manipulating-complex-objects",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244cc",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/accessing-nested-objects",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244cd",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/accessing-nested-arrays",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244cf",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/record-collection",
+        },
+        {
+          id: "cf1111c1c11feddfaeb1bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/iterate-with-javascript-while-loops",
+        },
+        {
+          id: "cf1111c1c11feddfaeb5bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/iterate-with-javascript-for-loops",
+        },
+        {
+          id: "56104e9e514f539506016a5c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/iterate-odd-numbers-with-a-for-loop",
+        },
+        {
+          id: "56105e7b514f539506016a5e",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/count-backwards-with-a-for-loop",
+        },
+        {
+          id: "5675e877dbd60be8ad28edc6",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/iterate-through-an-array-with-a-for-loop",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244e1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/nesting-for-loops",
+        },
+        {
+          id: "5a2efd662fb457916e1fe604",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/iterate-with-javascript-do---while-loops",
+        },
+        {
+          id: "5cfa3679138e7d9595b9d9d4",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/replace-loops-using-recursion",
+        },
+        {
+          id: "5688e62ea601b2482ff8422b",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/profile-lookup",
+        },
+        {
+          id: "cf1111c1c11feddfaeb9bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/generate-random-fractions-with-javascript",
+        },
+        {
+          id: "cf1111c1c12feddfaeb1bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/generate-random-whole-numbers-with-javascript",
+        },
+        {
+          id: "cf1111c1c12feddfaeb2bdef",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/generate-random-whole-numbers-within-a-range",
+        },
+        {
+          id: "587d7b7e367417b2b2512b23",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-the-parseint-function",
+        },
+        {
+          id: "587d7b7e367417b2b2512b22",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-the-parseint-function-with-a-radix",
+        },
+        {
+          id: "587d7b7e367417b2b2512b24",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-the-conditional-ternary-operator",
+        },
+        {
+          id: "587d7b7e367417b2b2512b21",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-multiple-conditional-ternary-operators",
+        },
+        {
+          id: "5cd9a70215d3c4e65518328f",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-recursion-to-create-a-countdown",
+        },
+        {
+          id: "5cc0bd7a49b71cb96132e54c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-javascript/use-recursion-to-create-a-range-of-numbers",
+        },
+        {
+          id: "587d7b87367417b2b2512b3f",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/explore-differences-between-the-var-and-let-keywords",
+        },
+        {
+          id: "587d7b87367417b2b2512b40",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/compare-scopes-of-the-var-and-let-keywords",
+        },
+        {
+          id: "587d7b87367417b2b2512b41",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/declare-a-read-only-variable-with-the-const-keyword",
+        },
+        {
+          id: "587d7b87367417b2b2512b42",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/mutate-an-array-declared-with-const",
+        },
+        {
+          id: "598f48a36c8c40764b4e52b3",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/prevent-object-mutation",
+        },
+        {
+          id: "587d7b87367417b2b2512b43",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-arrow-functions-to-write-concise-anonymous-functions",
+        },
+        {
+          id: "587d7b88367417b2b2512b44",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/write-arrow-functions-with-parameters",
+        },
+        {
+          id: "587d7b88367417b2b2512b46",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/set-default-parameters-for-your-functions",
+        },
+        {
+          id: "587d7b88367417b2b2512b47",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-the-rest-parameter-with-function-parameters",
+        },
+        {
+          id: "587d7b89367417b2b2512b48",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-the-spread-operator-to-evaluate-arrays-in-place",
+        },
+        {
+          id: "5cfa550e84205a357704ccb6",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-to-extract-values-from-objects",
+        },
+        {
+          id: "587d7b89367417b2b2512b49",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-to-assign-variables-from-objects",
+        },
+        {
+          id: "587d7b89367417b2b2512b4a",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-to-assign-variables-from-nested-objects",
+        },
+        {
+          id: "587d7b89367417b2b2512b4b",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-to-assign-variables-from-arrays",
+        },
+        {
+          id: "587d7b8a367417b2b2512b4c",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-with-the-rest-parameter-to-reassign-array-elements",
+        },
+        {
+          id: "587d7b8a367417b2b2512b4d",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-destructuring-assignment-to-pass-an-object-as-a-functions-parameters",
+        },
+        {
+          id: "587d7b8a367417b2b2512b4e",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/create-strings-using-template-literals",
+        },
+        {
+          id: "587d7b8a367417b2b2512b4f",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/write-concise-object-literal-declarations-using-object-property-shorthand",
+        },
+        {
+          id: "587d7b8b367417b2b2512b50",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/write-concise-declarative-functions-with-es6",
+        },
+        {
+          id: "587d7b8b367417b2b2512b53",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-class-syntax-to-define-a-constructor-function",
+        },
+        {
+          id: "587d7b8c367417b2b2512b54",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-getters-and-setters-to-control-access-to-an-object",
+        },
+        {
+          id: "5cddbfd622f1a59093ec611d",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/create-a-module-script",
+        },
+        {
+          id: "587d7b8c367417b2b2512b56",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use-export-to-share-a-code-block",
+        },
+        {
+          id: "587d7b8c367417b2b2512b55",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/reuse-javascript-code-using-import",
+        },
+        {
+          id: "587d7b8c367417b2b2512b57",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/use--to-import-everything-from-a-file",
+        },
+        {
+          id: "587d7b8c367417b2b2512b58",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/create-an-export-fallback-with-export-default",
+        },
+        {
+          id: "587d7b8d367417b2b2512b59",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/import-a-default-export",
+        },
+        {
+          id: "5cdafbb0291309899753167f",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/create-a-javascript-promise",
+        },
+        {
+          id: "5cdafbc32913098997531680",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/complete-a-promise-with-resolve-and-reject",
+        },
+        {
+          id: "5cdafbd72913098997531681",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/handle-a-fulfilled-promise-with-then",
+        },
+        {
+          id: "5cdafbe72913098997531682",
+          slug: "/learn/javascript-algorithms-and-data-structures/es6/handle-a-rejected-promise-with-catch",
+        },
+        {
+          id: "587d7b7e367417b2b2512b20",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/use-an-array-to-store-a-collection-of-data",
+        },
+        {
+          id: "5a661e0f1068aca922b3ef17",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/access-an-arrays-contents-using-bracket-notation",
+        },
+        {
+          id: "587d78b2367417b2b2512b0e",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/add-items-to-an-array-with-push-and-unshift",
+        },
+        {
+          id: "587d78b2367417b2b2512b0f",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/remove-items-from-an-array-with-pop-and-shift",
+        },
+        {
+          id: "587d78b2367417b2b2512b10",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/remove-items-using-splice",
+        },
+        {
+          id: "587d78b3367417b2b2512b11",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/add-items-using-splice",
+        },
+        {
+          id: "587d7b7a367417b2b2512b12",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/copy-array-items-using-slice",
+        },
+        {
+          id: "587d7b7b367417b2b2512b13",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/copy-an-array-with-the-spread-operator",
+        },
+        {
+          id: "587d7b7b367417b2b2512b17",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/combine-arrays-with-the-spread-operator",
+        },
+        {
+          id: "587d7b7b367417b2b2512b14",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/check-for-the-presence-of-an-element-with-indexof",
+        },
+        {
+          id: "587d7b7b367417b2b2512b15",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/iterate-through-all-an-arrays-items-using-for-loops",
+        },
+        {
+          id: "587d7b7b367417b2b2512b16",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/create-complex-multi-dimensional-arrays",
+        },
+        {
+          id: "587d7b7c367417b2b2512b18",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/add-key-value-pairs-to-javascript-objects",
+        },
+        {
+          id: "587d7b7c367417b2b2512b19",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/modify-an-object-nested-within-an-object",
+        },
+        {
+          id: "587d7b7c367417b2b2512b1a",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/access-property-names-with-bracket-notation",
+        },
+        {
+          id: "587d7b7c367417b2b2512b1b",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/use-the-delete-keyword-to-remove-object-properties",
+        },
+        {
+          id: "587d7b7d367417b2b2512b1c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/check-if-an-object-has-a-property",
+        },
+        {
+          id: "587d7b7d367417b2b2512b1d",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/iterate-through-the-keys-of-an-object-with-a-for---in-statement",
+        },
+        {
+          id: "587d7b7d367417b2b2512b1e",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/generate-an-array-of-all-object-keys-with-object-keys",
+        },
+        {
+          id: "587d7b7d367417b2b2512b1f",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-data-structures/modify-an-array-stored-in-an-object",
+        },
+        {
+          id: "56533eb9ac21ba0edf2244b3",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/convert-celsius-to-fahrenheit",
+        },
+        {
+          id: "a202eed8fc186c8434cb6d61",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/reverse-a-string",
+        },
+        {
+          id: "a302f7aae1aa3152a5b413bc",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/factorialize-a-number",
+        },
+        {
+          id: "a26cbbe9ad8655a977e1ceb5",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/find-the-longest-word-in-a-string",
+        },
+        {
+          id: "a789b3483989747d63b0e427",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/return-largest-numbers-in-arrays",
+        },
+        {
+          id: "acda2fb1324d9b0fa741e6b5",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/confirm-the-ending",
+        },
+        {
+          id: "afcc8d540bea9ea2669306b6",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/repeat-a-string-repeat-a-string",
+        },
+        {
+          id: "ac6993d51946422351508a41",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/truncate-a-string",
+        },
+        {
+          id: "a6e40f1041b06c996f7b2406",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/finders-keepers",
+        },
+        {
+          id: "a77dbc43c33f39daa4429b4f",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/boo-who",
+        },
+        {
+          id: "ab6137d4e35944e21037b769",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/title-case-a-sentence",
+        },
+        {
+          id: "579e2a2c335b9d72dd32e05c",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/slice-and-splice",
+        },
+        {
+          id: "adf08ec01beb4f99fc7a68f2",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/falsy-bouncer",
+        },
+        {
+          id: "a24c1a4622e3c05097f71d67",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/where-do-i-belong",
+        },
+        {
+          id: "af2170cad53daa0770fabdea",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/mutations",
+        },
+        {
+          id: "a9bd25c716030ec90084d8a1",
+          slug: "/learn/javascript-algorithms-and-data-structures/basic-algorithm-scripting/chunky-monkey",
+        },
+      ];
+
+      function handleSubmit(usernames) {
+        status.textContent = "Loading...";
+        results.innerHTML = "";
+        results.append(resultsTable());
+        Promise.all(
+          usernames.map((user) =>
+            fetchUser(user)
+              .then(checkResult(required))
+              .then(updateResult)
+              .catch(updateError)
+          )
+        ).then(() => (status.textContent = "Complete"));
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const usernamesRaw = event.target.elements.usernames.value;
+        const usernames = usernamesRaw.split(/,\s*/);
+        history.replaceState(null, null, "?names=" + usernames.join(","));
+        handleSubmit(usernames);
+      });
+
+      function fetchUser(username) {
+        return fetch(`/api/fcc/users/get-public-profile?username=${username}`)
+          .then((response) => {
+            if (!response.ok) {
+              const error = new Error("HTTP Error");
+              error.status = response.status;
+              throw error;
+            }
+            return response.json();
+          })
+          .then(({ entities }) => {
+            const completed = entities.user[username].completedChallenges
+              .flat()
+              .map((c) => c.id);
+            return { username, completed };
+          })
+          .catch((error) => {
+            error.username = username;
+            throw error;
+          });
+      }
+
+      function checkResult(required) {
+        return (user) => {
+          user.challenges = required.map((req) => {
+            const completed = !!user.completed.find((id) => req.id === id);
+            return { ...req, completed };
+          });
+          user.complete = user.challenges.every((k) => k.completed);
+          console.log(user);
+          return user;
+        };
+      }
+
+      function updateResult(user) {
+        const resultsBody = results.querySelector("tbody");
+        resultsBody.append(
+          row(
+            user.username,
+            user.complete ? " 👍" : " 👎",
+            missing(user.challenges)
+          )
+        );
+      }
+
+      function updateError(error) {
+        console.error(error);
+        status.textContent = "Error";
+        const resultsBody = results.querySelector("tbody");
+        resultsBody.append(row(error.username, error.message));
+      }
+
+      function row(username, complete, missing = []) {
+        return h(
+          "tr",
+          {},
+          h("td", {}, username),
+          h("td", {}, complete),
+          h("td", {}, ...missing)
+        );
+      }
+
+      function missing(challenges) {
+        return challenges
+          .filter((c) => !c.completed)
+          .map((c, i) => [h("a", { href: c.slug }, i + 1), " "])
+          .flat();
+      }
+
+      const template = document.querySelector("#results-template");
+      function resultsTable() {
+        return template.content.cloneNode(true);
+      }
+
+      const { searchParams } = new URL(window.location);
+      const names = searchParams.get("names");
+      if (names) {
+        form.elements.usernames.value = names;
+        const usernames = names.split(/,\s*/);
+        handleSubmit(usernames);
+      }
+
+      function h(tag, props = {}, ...kids) {
+        const el = document.createElement(tag);
+        Object.assign(el, props);
+        el.append(...kids);
+        return el;
+      }
+    </script>
+  </body>
+</html>
